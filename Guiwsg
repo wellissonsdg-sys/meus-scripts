@@ -1,0 +1,109 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Espera o carregamento da Tool ou pega a Tool atual
+local tool = script.Parent
+
+-- Variáveis de controle de estado
+local toolEquipped = false
+local isLocked = false
+local selectedTarget = nil
+local selectedTargets = {}
+local draggingLoop = nil
+
+-- Tabela de direções de movimento
+local directions = {
+	Up = false,
+	Down = false,
+	Left = false,
+	Right = false,
+	Forward = false,
+	Backward = false
+}
+
+-- Exemplo de lista com todos os botões da sua GUI
+-- (Ajuste os caminhos para onde os seus botões reais estão na ScreenGui)
+local guiButtons = {
+	Up = nil,       -- Ex: LocalPlayer.PlayerGui.MinhaGui.UpButton
+	Down = nil,
+	Left = nil,
+	Right = nil,
+	Forward = nil,
+	Back = nil,
+	Throw = nil,
+	Lock = nil,
+	Mode = nil
+}
+
+-- Função auxiliar para limpar destaques visuais (Highlight)
+local function clearHighlight()
+	-- Se houver algum efeito visual de contorno ou seleção no alvo, limpa aqui
+	if selectedTarget and selectedTarget:FindFirstChild("TargetHighlight") then
+		selectedTarget.TargetHighlight:Destroy()
+	end
+end
+
+-- Função para alterar a visibilidade de todos os botões de uma só vez
+local function setButtonsVisible(visibleState)
+	for _, button in pairs(guiButtons) do
+		if button and button:IsA("GuiObject") then
+			button.Visible = visibleState
+		end
+	end
+end
+
+--------------------------------------------------------------------------------
+-- EVENTOS DA TOOL E DO JOGADOR
+--------------------------------------------------------------------------------
+
+-- Evento 1: Quando a ferramenta é equipada
+tool.Equipped:Connect(function()
+	toolEquipped = true
+	
+	-- Mostra todos os botões da interface na tela
+	setButtonsVisible(true)
+end)
+
+-- Evento 2: Quando a ferramenta é guardada (desequipada)
+tool.Unequipped:Connect(function()
+	toolEquipped = false
+	
+	-- Esconde todos os botões da tela
+	setButtonsVisible(false)
+
+	-- Interrompe loops de carregamento ou arraste ativos
+	if draggingLoop then 
+		draggingLoop:Disconnect() 
+		draggingLoop = nil
+	end
+
+	-- Reseta as direções de movimento
+	directions = {
+		Up = false, 
+		Down = false, 
+		Left = false, 
+		Right = false, 
+		Forward = false, 
+		Backward = false
+	}
+
+	-- Limpa os efeitos de mira/destaque nos alvos
+	clearHighlight() 
+end)
+
+-- Evento 3: Quando o personagem renasce ou morre
+LocalPlayer.CharacterAdded:Connect(function()
+	selectedTarget = nil
+	selectedTargets = {}
+	isLocked = false
+	toolEquipped = false
+
+	if draggingLoop then 
+		draggingLoop:Disconnect() 
+		draggingLoop = nil
+	end
+
+	clearHighlight()
+	setButtonsVisible(false)
+end)
+
